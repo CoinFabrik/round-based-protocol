@@ -179,10 +179,8 @@ where
     async fn proceed_if_needed(&mut self) -> Result<(), Error<SM::Err, IErr, O::Error>> {
         let mut state = self.state.take().ok_or(InternalError::MissingState)?;
         while state.wants_to_proceed() {
-            let (result, s) = tokio::task::spawn_blocking(move || (state.proceed(), state))
-                .await
-                .map_err(Error::ProceedPanicked)?;
-            state = s;
+            // FIXME: fix for wasm
+            let result = state.proceed();
 
             match result {
                 Ok(()) => (),
@@ -240,16 +238,14 @@ where
         Ok(())
     }
     fn enforce_timeout<F>(
-        deadline: Option<time::Instant>,
+        _deadline: Option<time::Instant>,
         f: F,
     ) -> impl Future<Output = Result<F::Output, time::error::Elapsed>>
     where
         F: Future,
     {
-        match deadline {
-            Some(deadline) => Either::Right(timeout_at(deadline, f)),
-            None => Either::Left(f.map(Ok)),
-        }
+        // FIXME: fix timeout for wasm
+        f.map(Ok)
     }
 }
 
